@@ -4,9 +4,33 @@ const { StatusCodes } = require('http-status-codes');
 const customError = require('../errors/');
 
 async function login(req, res) {
-    return res.send('login');
+    const { email, password } = req.body;
+    if (!email || !password) {
+        throw new customError.BadRequestError('Please provide email and password');
+    }
+    const user = await User.findOne({ email });
+
+    if (!user) {
+        throw new customError.UnauthenticatedError('Invalid Credentials');
+    }
+
+    const isPasswordCorrect = await user.comparePassword(password);
+
+    if (!isPasswordCorrect) {
+        throw new customError.UnauthenticatedError('Invalid Credentials');
+    }
+
+    const tokenUser = {
+        name: user.name,
+        userId: user._id,
+        role: user.role,
+    };
+
+    attachCookiesToResponse({ res, user: tokenUser });
+    return res.status(StatusCodes.CREATED).json({ user: tokenUser });
 }
-async function register(req, res) {
+
+async function register(_, res) {
     const { email, name, password } = req.body;
     const emailAlreadyExist = await User.findOne({ email });
     if (emailAlreadyExist) {
@@ -24,11 +48,15 @@ async function register(req, res) {
     };
     attachCookiesToResponse({ res, user: tokenUser });
 
-    res.status(StatusCodes.CREATED).json({ user: tokenUser });
+    return res.status(StatusCodes.CREATED).json({ user: tokenUser });
 }
 
-async function logout(req, res) {
-    return res.send('logout');
+async function logout(_, res) {
+    res.cookie('token', 'logout', {
+        httpOnly: true,
+        expires: new Date(Date.now()),
+    });
+    return res.status(StatusCodes.OK).json({ msg: 'user logged out!' });
 }
 
 module.exports = { register, login, logout };
