@@ -4,6 +4,7 @@ const mongoose = require('mongoose');
 const express = require('express');
 const morgan = require('morgan');
 const cookieParser = require('cookie-parser');
+const fileUpload = require('express-fileupload');
 
 // database
 const connectDB = require('./db/connect');
@@ -18,10 +19,14 @@ const app = express();
 const authRouter = require('./routes/authRoutes');
 const userRouter = require('./routes/userRoutes');
 const productRouter = require('./routes/productRoutes');
+const reviewRouter = require('./routes/reviewRoutes');
 
 app.use(morgan('tiny'));
 app.use(express.json());
 app.use(cookieParser(process.env.JWT_SECRET));
+
+app.use(express.static('./public'));
+app.use(fileUpload());
 
 // app.use('/api/v1/', (req, res) => {
 //     console.log(req.signedCookies;
@@ -31,6 +36,7 @@ app.use(cookieParser(process.env.JWT_SECRET));
 app.use('/api/v1/auth', authRouter);
 app.use('/api/v1/users', userRouter);
 app.use('/api/v1/products', productRouter);
+app.use('/api/v1/reviews', reviewRouter);
 app.use(notFoundMiddleware);
 app.use(errorHandlerMiddleware);
 
